@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodePilot - AI Coding Assistant</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --bg: #1a1a1a;
+    --sidebar: #111111;
+    --chat-bg: #1a1a1a;
+    --bubble-ai: #2a2a2a;
+    --bubble-user: #cc785c;
+    --border: #333333;
+    --white: #eeeeee;
+    --muted: #888888;
+    --input-bg: #2a2a2a;
+    --accent: #cc785c;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--white);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* TOP NAV */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--sidebar);
+    flex-shrink: 0;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .menu-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+  }
+
+  .logo {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--white);
+  }
+
+  .logo span { color: var(--accent); }
+
+  .model-pill {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 6px;
+    border-radius: 6px;
+  }
+
+  .icon-btn:hover { background: var(--bubble-ai); }
+
+  /* TOOLS BAR */
+  .tools-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--sidebar);
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+
+  .tool-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .tool-pill:hover {
+    border-color: var(--accent);
+    color: var(--white);
+  }
+
+  .tool-pill.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  /* CHAT AREA */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 0;
+    scroll-behavior: smooth;
+  }
+
+  .chat-area::-webkit-scrollbar { width: 4px; }
+  .chat-area::-webkit-scrollbar-track { background: transparent; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .message-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .avatar-ai {
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .avatar-user {
+    background: #444;
+    color: var(--white);
+    font-size: 14px;
+  }
+
+  .bubble {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .bubble-ai {
+    background: var(--bubble-ai);
+    color: var(--white);
+    border-radius: 4px 16px 16px 16px;
+  }
+
+  .bubble-user {
+    background: var(--bubble-user);
+    color: white;
+    border-radius: 16px 4px 16px 16px;
+    text-align: right;
+  }
+
+  .bubble pre {
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #a8ff78;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 4px;
+    padding: 4px 0;
+    align-items: center;
+  }
+
+  .typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: var(--muted);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+  }
+
+  /* WELCOME */
+  .welcome {
+    text-align: center;
+    padding: 60px 20px 30px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .welcome-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--accent);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 20px;
+    color: white;
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .welcome h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+
+  .welcome p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .suggestion-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .suggestion {
+    background: var(--bubble-ai);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .suggestion:hover { border-color: var(--accent); }
+
+  .suggestion-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--white);
+    margin-bottom: 3px;
+  }
+
+  .suggestion-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* INPUT AREA */
+  .input-area {
+    padding: 12px 20px 20px;
+    background: var(--chat-bg);
+    flex-shrink: 0;
+  }
+
+  .input-box {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    transition: border-color 0.2s;
+  }
+
+  .input-box:focus-within { border-color: var(--accent); }
+
+  .chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--white);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    resize: none;
+    max-height: 120px;
+    line-height: 1.5;
+    outline: none;
+  }
+
+  .chat-input::placeholder { color: var(--muted); }
+
+  .send-btn {
+    background: var(--accent);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+  }
+
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .input-footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="menu-btn">☰</button>
+    <div class="logo">Code<span>Pilot</span></div>
+  </div>
+  <div class="model-pill">⚡ CodePilot AI</div>
+  <div class="topbar-right">
+    <button class="icon-btn">⋯</button>
+  </div>
+</div>
+
+<!-- TOOLS BAR -->
+<div class="tools-bar">
+  <button class="tool-pill active" onclick="setTool(this,'write')">⌨️ Write Code</button>
+  <button class="tool-pill" onclick="setTool(this,'fix')">🐛 Fix Bug</button>
+  <button class="tool-pill" onclick="setTool(this,'explain')">📖 Explain</button>
+  <button class="tool-pill" onclick="setTool(this,'convert')">🔄 Convert</button>
+  <button class="tool-pill" onclick="setTool(this,'optimize')">⚡ Optimize</button>
+  <button class="tool-pill" onclick="setTool(this,'review')">📝 Review</button>
+</div>
+
+<!-- CHAT AREA -->
+<div class="chat-area" id="chat">
+  <div class="message-wrap">
+
+    <!-- WELCOME -->
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">CP</div>
+      <h1>Hi, I'm CodePilot</h1>
+      <p>Your free AI coding assistant. Ask me to write, fix, explain, or convert code — in any language.</p>
+      <div class="suggestion-grid">
+        <div class="suggestion" onclick="useSuggestion('Write a Python function to reverse a string')">
+          <div class="suggestion-title">⌨️ Write code</div>
+          <div class="suggestion-sub">Generate working code</div>
+        </div>
+        <div class="suggestion" onclick="useSuggestion('Fix this bug: function add(a,b) { return a - b; }')">
+          <div class="suggestion-title">🐛 Fix a bug</div>
+          <div class="suggestion-sub">Paste broken code</div>
+        </div>
+        <div class="suggestion" onclick="useSuggestion('Explain this: const sum = arr.reduce((a,b) => a+b, 0)')">
+          <div class="suggestion-title">📖 Explain code</div>
+          <div class="suggestion-sub">Understand any snippet</div>
+        </div>
+        <div class="suggestion" onclick="useSuggestion('Convert this Python to JavaScript: def greet(name): return f\"Hello {name}\"')">
+          <div class="suggestion-title">🔄 Convert code</div>
+          <div class="suggestion-sub">Switch languages</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- INPUT AREA -->
+<div class="input-area">
+  <div class="input-box">
+    <textarea
+      class="chat-input"
+      id="chat-input"
+      placeholder="Ask CodePilot anything about code..."
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">↑</button>
+  </div>
+  <div class="input-footer">CodePilot is free to use — no signup needed</div>
+</div>
+
+<script>
+  let currentTool = 'write';
+  let isTyping = false;
+
+  const systemPrompts = {
+    write: 'You are CodePilot, an expert AI coding assistant. Write clean, working, well-commented code. Always specify the language. Format code in code blocks using triple backticks.',
+    fix: 'You are CodePilot, an expert bug fixer. Find the bug, fix it, and explain in plain English what was wrong. Format fixed code in code blocks.',
+    explain: 'You are CodePilot, a coding teacher. Explain code in simple plain English a beginner can understand. Be clear, friendly and concise.',
+    convert: 'You are CodePilot, a code conversion expert. Convert the code to the target language. Keep same logic, add comments, format in code blocks.',
+    optimize: 'You are CodePilot, an optimization expert. Make the code faster and cleaner. Explain briefly what you improved. Format in code blocks.',
+    review: 'You are CodePilot, a senior code reviewer. Give clear, constructive feedback on quality, structure, naming, and best practices. Be specific and helpful.'
+  };
+
+  const placeholders = {
+    write: 'Describe what you want to build... e.g. Write a function to sort an array',
+    fix: 'Paste your broken code here...',
+    explain: 'Paste code you want explained...',
+    convert: 'Paste code + say target language... e.g. Convert to JavaScript',
+    optimize: 'Paste code to optimize...',
+    review: 'Paste code for review...'
+  };
+
+  function setTool(btn, tool) {
+    document.querySelectorAll('.tool-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    currentTool = tool;
+    document.getElementById('chat-input').placeholder = placeholders[tool];
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function useSuggestion(text) {
+    document.getElementById('chat-input').value = text;
+    sendMessage();
+  }
+
+  function addMessage(content, isUser) {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    const wrap = document.querySelector('.message-wrap');
+    const msg = document.createElement('div');
+    msg.className = 'message ' + (isUser ? 'user' : 'ai');
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar ' + (isUser ? 'avatar-user' : 'avatar-ai');
+    avatar.textContent = isUser ? '👤' : 'CP';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + (isUser ? 'bubble-user' : 'bubble-ai');
+
+    if (!isUser) {
+      // Format code blocks
+      const formatted = content.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+        return `<pre>${code.trim()}</pre>`;
+      });
+      bubble.innerHTML = formatted.replace(/\n/g, '<br>');
+    } else {
+      bubble.textContent = content;
+    }
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    wrap.appendChild(msg);
+
+    document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+    return bubble;
+  }
+
+  function addTyping() {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+
+    const wrap = document.querySelector('.message-wrap');
+    const msg = document.createElement('div');
+    msg.className = 'message ai';
+    msg.id = 'typing-msg';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar avatar-ai';
+    avatar.textContent = 'CP';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble bubble-ai';
+    bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    wrap.appendChild(msg);
+
+    document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing-msg');
+    if (t) t.remove();
+  }
+
+  async function sendMessage() {
+    if (isTyping) return;
+    const input = document.getElementById('chat-input');
+    const prompt = input.value.trim();
+    if (!prompt) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    addMessage(prompt, true);
+
+    isTyping = true;
+    document.getElementById('send-btn').disabled = true;
+    addTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, system: systemPrompts[currentTool] })
+      });
+      const data = await res.json();
+      const text = data.content?.map(i => i.text || '').join('') || 'Something went wrong. Please try again.';
+      removeTyping();
+      addMessage(text, false);
+    } catch (err) {
+      removeTyping();
+      addMessage('Error connecting to AI. Please try again.', false);
+    }
+
+    isTyping = false;
+    document.getElementById('send-btn').disabled = false;
+  }
+</script>
+
+</body>
+</html>
